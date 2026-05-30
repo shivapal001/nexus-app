@@ -1,4 +1,4 @@
-const CACHE = 'nexus-v3';
+const CACHE = 'nexus-v4';
 const ASSETS = [
   '/',
   '/app',
@@ -10,32 +10,53 @@ const ASSETS = [
   '/icons/apple-touch-icon.png',
 ];
 
-// Install: cache core assets
+// Install: pre-cache core assets
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE)
+      .then(c => c.addAll(ASSETS))
+      .then(() => self.skipWaiting())
   );
 });
 
-// Activate: clean old caches
+// Activate: delete old caches and claim clients immediately
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys =>
+        Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      )
+      .then(() => self.clients.claim())
   );
 });
 
-// Fetch: network first, fall back to cache
+// Fetch: network-first with cache fallback
+// Intercepts /app → serves /app.html so navigation works offline
 self.addEventListener('fetch', e => {
-  // Skip non-GET and external requests
   if (e.request.method !== 'GET') return;
   if (!e.request.url.startsWith(self.location.origin)) return;
+
+  const url = new URL(e.request.url);
+
+  // Serve app.html for /app navigation requests
+  if (url.pathname === '/app') {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(CACHE).then(c => c.put(e.request, clone));
+          }
+          return res;
+        })
+        .catch(() => caches.match('/app') || caches.match('/app.html'))
+    );
+    return;
+  }
 
   e.respondWith(
     fetch(e.request)
       .then(res => {
-        // Cache successful responses
         if (res && res.status === 200 && res.type === 'basic') {
           const clone = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));
@@ -53,11 +74,11 @@ self.addEventListener('push', e => {
     self.registration.showNotification(data.title || 'Nexus', {
       body: data.body || 'You have a new message',
       icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
+      badge: '/icons/icon-96x96.png',
       vibrate: [100, 50, 100],
       data: { url: data.url || '/app' },
       actions: [
-        { action: 'open', title: 'Open', icon: '/icons/icon-72x72.png' },
+        { action: 'open',    title: 'Open',    icon: '/icons/icon-72x72.png' },
         { action: 'dismiss', title: 'Dismiss' }
       ]
     })
