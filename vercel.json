@@ -25,12 +25,11 @@
     }
   ],
   "routes": [
-    { "src": "/",            "dest": "/index.html" },
-    { "src": "/app",         "dest": "/app.html" },
-    { "src": "/sw.js",       "dest": "/sw.js" },
+    { "src": "/",             "dest": "/index.html" },
+    { "src": "/app",          "dest": "/app.html" },
+    { "src": "/sw.js",        "dest": "/sw.js" },
     { "src": "/manifest.json","dest": "/manifest.json" },
-    { "src": "/icons/(.*)", "dest": "/icons/$1" },
-    { "src": "/(.*)\\.html", "dest": "/$1.html" },
-    { "src": "/(.*)",        "dest": "/$1" }
+    { "src": "/(.*)\\.html",  "dest": "/$1.html" },
+    { "src": "/(.*)",         "dest": "/$1" }
   ]
 }
