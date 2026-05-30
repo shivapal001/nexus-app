@@ -11,6 +11,24 @@
 <meta name="description" content="Nexus — Connect. Chat. Vibe.">
 <title>Nexus</title>
 
+<!-- ⚡ CRITICAL: Must be first script — captures beforeinstallprompt before anything else loads -->
+<script>
+  // Store the event the moment Chrome fires it
+  window.__pwaPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    window.__pwaPrompt = e;
+    // Dispatch custom event so any listener added later can react
+    window.dispatchEvent(new Event('pwa-prompt-ready'));
+    console.log('[PWA] beforeinstallprompt captured ✓');
+  });
+  // Register SW immediately — don't wait for load
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .catch(function(e){ console.warn('[SW]', e); });
+  }
+</script>
+
 <!-- PWA Manifest -->
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -884,13 +902,7 @@ if(isIOS&&!isInStandalone&&!localStorage.getItem('nx-ios-dismissed')){
 }
 
 // ── Service Worker ──
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
-      .then(()=>console.log('SW registered'))
-      .catch(()=>{});
-  });
-}
+// Registered in <head> script above for earliest possible activation
 
 // ── Auth ──
 window.authTab=function(t){
@@ -1696,150 +1708,154 @@ onAuthStateChanged(auth,async u=>{
   }else{$('splash').classList.add('hide');}
 });
 
-// ── Service Worker Registration ──
-// (registered above in the original SW block)
+// ── PWA Install Banner ──
+(function () {
+  const isIOS        = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.matchMedia('(display-mode:standalone)').matches || navigator.standalone === true;
+  if (isStandalone) return; // already installed — don't show banner
 
-// ── PWA Install Prompt ──
-let _deferredPrompt = null;
-const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-const _isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-
-// Inject install button styles
-(function(){
-  const s = document.createElement('style');
-  s.textContent = `
-    #pwa-install-bar {
-      position: fixed;
-      bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 9990;
-      display: none;
-      align-items: center;
-      gap: 12px;
-      background: linear-gradient(135deg, #4c1d95, #7c3aed);
-      border: 1px solid rgba(168,85,247,.4);
-      border-radius: 16px;
-      padding: 12px 20px;
-      box-shadow: 0 8px 32px rgba(0,0,0,.5);
-      white-space: nowrap;
-      cursor: pointer;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      animation: slideUp .4s ease;
+  /* ── inject styles ── */
+  const style = document.createElement('style');
+  style.textContent = `
+    #nx-install-wrap {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      z-index: 99999;
+      padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+      background: linear-gradient(180deg, transparent 0%, rgba(10,10,15,.98) 18%);
+      pointer-events: none;
     }
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-    }
-    #pwa-install-bar .pwa-icon { font-size: 22px; }
-    #pwa-install-bar .pwa-text { color: #fff; font-size: 14px; font-weight: 600; }
-    #pwa-install-bar .pwa-text small { display: block; font-size: 11px; font-weight: 400; opacity: .75; }
-    #pwa-install-bar .pwa-close {
-      width: 24px; height: 24px; border-radius: 50%; border: none;
-      background: rgba(255,255,255,.15); color: #fff; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; line-height: 1; flex-shrink: 0;
-    }
-    #pwa-ios-guide {
-      position: fixed;
-      bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-      left: 16px; right: 16px;
-      z-index: 9989;
-      background: #1a1a24;
-      border: 1px solid rgba(168,85,247,.3);
+    #nx-install-card {
+      display: flex; align-items: center; gap: 12px;
+      background: linear-gradient(135deg, #1e1040 0%, #2d1b69 50%, #1e1040 100%);
+      border: 1px solid rgba(168,85,247,.45);
       border-radius: 18px;
-      padding: 18px 20px;
+      padding: 14px 16px;
+      box-shadow: 0 -2px 40px rgba(124,58,237,.25), 0 8px 32px rgba(0,0,0,.6);
+      pointer-events: all;
+      animation: nx-slide-up .45s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    @keyframes nx-slide-up {
+      from { opacity:0; transform:translateY(100%); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    #nx-install-icon {
+      width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+      background: linear-gradient(135deg,#7c3aed,#a855f7);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+    }
+    #nx-install-text { flex: 1; min-width: 0; }
+    #nx-install-text strong { display: block; color: #f1f0f5; font-size: 15px; font-weight: 700; font-family: inherit; }
+    #nx-install-text span   { display: block; color: #a09db8;  font-size: 12px; margin-top: 2px; font-family: inherit; }
+    #nx-install-btn {
+      flex-shrink: 0;
+      background: linear-gradient(135deg,#7c3aed,#a855f7);
+      color: #fff; border: none; border-radius: 12px;
+      padding: 10px 18px; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      box-shadow: 0 4px 16px rgba(124,58,237,.5);
+      transition: transform .15s, opacity .15s;
+      white-space: nowrap;
+    }
+    #nx-install-btn:active { transform: scale(.95); opacity: .85; }
+    #nx-install-close {
+      flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+      border: none; background: rgba(255,255,255,.1);
+      color: #a09db8; font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    #nx-install-close:active { background: rgba(255,255,255,.2); }
+    /* iOS instruction sheet */
+    #nx-ios-sheet {
       display: none;
-      box-shadow: 0 8px 32px rgba(0,0,0,.5);
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #16162a; border: 1px solid rgba(168,85,247,.3);
+      border-radius: 18px; padding: 18px 20px; margin-bottom: 10px;
+      pointer-events: all;
+      animation: nx-slide-up .35s ease both;
     }
-    #pwa-ios-guide.on { display: block; }
-    #pwa-ios-guide h4 { color: #f1f0f5; font-size: 14px; font-weight: 600; margin-bottom: 10px; }
-    #pwa-ios-guide ol { padding-left: 18px; display: flex; flex-direction: column; gap: 7px; }
-    #pwa-ios-guide li { color: #9d9ab8; font-size: 13px; line-height: 1.5; }
-    #pwa-ios-guide li strong { color: #f1f0f5; }
+    #nx-ios-sheet.show { display: block; }
+    #nx-ios-sheet p { color: #f1f0f5; font-size: 14px; font-weight: 600; margin-bottom: 12px; font-family: inherit; }
+    #nx-ios-sheet ol { padding-left: 20px; display:flex; flex-direction:column; gap:9px; }
+    #nx-ios-sheet li { color: #a09db8; font-size: 13px; line-height: 1.55; font-family: inherit; }
+    #nx-ios-sheet li b { color: #f1f0f5; }
   `;
-  document.head.appendChild(s);
-})();
+  document.head.appendChild(style);
 
-// Inject install bar HTML
-(function(){
-  const bar = document.createElement('div');
-  bar.id = 'pwa-install-bar';
-  bar.innerHTML = `
-    <span class="pwa-icon">📲</span>
-    <div class="pwa-text">
-      Install Nexus
-      <small>Add to Home Screen</small>
+  /* ── inject HTML ── */
+  const wrap = document.createElement('div');
+  wrap.id = 'nx-install-wrap';
+  wrap.innerHTML = `
+    <div id="nx-ios-sheet">
+      <p>📱 Install Nexus on your iPhone</p>
+      <ol>
+        <li>Tap the <b>Share</b> button ⬆️ at the bottom of Safari</li>
+        <li>Scroll and tap <b>"Add to Home Screen"</b></li>
+        <li>Tap <b>"Add"</b> — done! Nexus is on your home screen</li>
+      </ol>
     </div>
-    <button class="pwa-close" id="pwa-close-btn" aria-label="Dismiss">✕</button>
+    <div id="nx-install-card">
+      <div id="nx-install-icon">💬</div>
+      <div id="nx-install-text">
+        <strong>Install Nexus</strong>
+        <span id="nx-install-sub">Add to Home Screen — it's free</span>
+      </div>
+      <button id="nx-install-btn">Install</button>
+      <button id="nx-install-close" aria-label="Dismiss">✕</button>
+    </div>
   `;
-  document.body.appendChild(bar);
+  document.body.appendChild(wrap);
 
-  const guide = document.createElement('div');
-  guide.id = 'pwa-ios-guide';
-  guide.innerHTML = `
-    <h4>📱 Install on iPhone / iPad</h4>
-    <ol>
-      <li>Tap the <strong>Share</strong> button ⬆️ at the bottom of Safari</li>
-      <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
-      <li>Tap <strong>"Add"</strong> — Nexus appears on your home screen!</li>
-    </ol>
-  `;
-  document.body.appendChild(guide);
+  const card      = document.getElementById('nx-install-card');
+  const installBtn= document.getElementById('nx-install-btn');
+  const closeBtn  = document.getElementById('nx-install-close');
+  const subText   = document.getElementById('nx-install-sub');
+  const iosSheet  = document.getElementById('nx-ios-sheet');
+
+  /* ── iOS flow ── */
+  if (isIOS) {
+    subText.textContent = 'Tap Install to see how';
+    installBtn.textContent = 'How to Install';
+    installBtn.addEventListener('click', () => {
+      iosSheet.classList.toggle('show');
+    });
+    closeBtn.addEventListener('click', () => wrap.remove());
+    return; // done for iOS
+  }
+
+  /* ── Android / Chrome flow ── */
+  // __pwaPrompt is captured in the <head> script before anything loads
+  function attachInstallClick(prompt) {
+    installBtn.addEventListener('click', async () => {
+      prompt.prompt();
+      const { outcome } = await prompt.userChoice;
+      if (outcome === 'accepted') wrap.remove();
+    });
+  }
+
+  if (window.__pwaPrompt) {
+    // Prompt already captured before this script ran
+    attachInstallClick(window.__pwaPrompt);
+  } else {
+    // Not yet fired — listen for our custom event from head script
+    installBtn.textContent = 'Install';
+    subText.textContent = 'Loading…';
+    installBtn.disabled = true;
+    installBtn.style.opacity = '0.5';
+
+    window.addEventListener('pwa-prompt-ready', () => {
+      installBtn.disabled = false;
+      installBtn.style.opacity = '1';
+      subText.textContent = 'Add to Home Screen — it\'s free';
+      attachInstallClick(window.__pwaPrompt);
+    }, { once: true });
+  }
+
+  closeBtn.addEventListener('click', () => wrap.remove());
+
+  // Auto-hide when installed via browser menu
+  window.addEventListener('appinstalled', () => wrap.remove());
 })();
-
-// Android / Chrome: capture beforeinstallprompt
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  _deferredPrompt = e;
-  if (!_isStandalone) {
-    const bar = document.getElementById('pwa-install-bar');
-    if (bar) bar.style.display = 'flex';
-  }
-});
-
-// Tap bar → trigger native install prompt
-document.addEventListener('click', e => {
-  const bar = document.getElementById('pwa-install-bar');
-  const closeBtn = document.getElementById('pwa-close-btn');
-  if (!bar) return;
-
-  if (closeBtn && closeBtn.contains(e.target)) {
-    bar.style.display = 'none';
-    return;
-  }
-
-  if (bar.contains(e.target)) {
-    if (_deferredPrompt) {
-      _deferredPrompt.prompt();
-      _deferredPrompt.userChoice.then(({ outcome }) => {
-        _deferredPrompt = null;
-        bar.style.display = 'none';
-      });
-    } else if (_isIOS) {
-      const guide = document.getElementById('pwa-ios-guide');
-      if (guide) guide.classList.toggle('on');
-    }
-  }
-});
-
-// iOS Safari: show install bar with guide toggle
-if (_isIOS && !_isStandalone) {
-  const bar = document.getElementById('pwa-install-bar');
-  if (bar) {
-    bar.style.display = 'flex';
-    const icon = bar.querySelector('.pwa-icon');
-    if (icon) icon.textContent = '🍎';
-  }
-}
-
-// Hide when installed
-window.addEventListener('appinstalled', () => {
-  const bar = document.getElementById('pwa-install-bar');
-  if (bar) bar.style.display = 'none';
-  _deferredPrompt = null;
-});
 </script>
 </body>
 </html>
