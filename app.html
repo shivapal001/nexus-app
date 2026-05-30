@@ -384,10 +384,11 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 @media(max-width:700px){
   #sidebar{
     position:fixed;left:0;top:0;bottom:0;z-index:100;
-    transform:translateX(-100%);
+    transform:translateX(0); /* visible by default on mobile */
     width:100%!important;min-width:100%!important;
+    transition:transform .3s cubic-bezier(.4,0,.2,1);
   }
-  #sidebar.mob-open{transform:translateX(0)}
+  #sidebar.hide-mob{transform:translateX(-100%)} /* hide when chat is open */
   #main{width:100%}
   .s-head{padding-top:calc(14px + var(--safe-top))}
   #mob-back{display:flex!important}
@@ -1024,7 +1025,6 @@ async function openChat(chat){
   const ca=$('c-ava');ca.textContent=gi(dn);ca.style.background=col;
   $('c-name').textContent=dn;
   $('c-status').textContent=isG?`${chat.members?.length||0} members`:(chat.otherOnline?'Online':'Last seen recently');
-  // Update call button titles for group vs personal
   $('voice-call-btn').title=isG?'Group Voice Call':'Voice Call';
   $('video-call-btn').title=isG?'Group Video Call':'Video Call';
   await updateDoc(doc(db,'chats',chat.id),{[`unreadCount.${me.uid}`]:0}).catch(()=>{});
@@ -1044,9 +1044,9 @@ async function openChat(chat){
       }
     });
   });
-  // Mobile: hide sidebar
+  // Mobile: hide sidebar when chat opens
   if(window.innerWidth<=700){
-    $('sidebar').classList.remove('mob-open');
+    $('sidebar').classList.add('hide-mob');
     $('mob-back').style.display='flex';
   }
   renderChatList(allChats);
@@ -1580,15 +1580,106 @@ window.closeM=function(id){$(id).classList.remove('on');};
 window.autoH=function(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,110)+'px';};
 window.toggleAtt=function(){$('att-menu').classList.toggle('on');};
 window.mobBack=function(){
-  $('sidebar').classList.add('mob-open');
-  $('c-head').style.display='none';$('i-bar').style.display='none';
-  $('msgs').innerHTML='';$('empty').style.display='flex';
-  $('mob-back').style.display='none';chatId=null;
+  // Show sidebar, hide chat area
+  $('sidebar').classList.remove('hide-mob');
+  $('c-head').style.display='none';
+  $('i-bar').style.display='none';
+  $('msgs').innerHTML='';
+  $('empty').style.display='flex';
+  $('mob-back').style.display='none';
+  chatId=null;
+  if(msgUnsub){msgUnsub();msgUnsub=null;}
 };
+
+// ── Nav Tabs — Contacts / Groups / Calls / Me ──
 window.navTo=function(s,el){
-  document.querySelectorAll('.nav-b').forEach(b=>b.classList.remove('on'));el.classList.add('on');
-  if(s==='calls')showToast('Recent calls — coming soon!','call');
-  if(s==='me')showToast('Profile: '+me?.name,'person');
+  document.querySelectorAll('.nav-b').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  if(s==='chats'){
+    // already on chats tab — just show chat list
+    switchTab('all', document.querySelector('.s-tab'));
+    return;
+  }
+  if(s==='contacts'){openNC();return;}
+  if(s==='groups'){
+    // show groups tab + open create group if none
+    switchTab('groups', document.querySelectorAll('.s-tab')[2]);
+    const hasGroups=allChats.some(c=>c.type==='group');
+    if(!hasGroups) openNG();
+    return;
+  }
+  if(s==='calls'){openCallsPanel();return;}
+  if(s==='me'){openMyProfile();return;}
+};
+
+// ── Calls Panel ──
+function openCallsPanel(){
+  $('calls-modal').classList.add('on');
+  // List recent chats as "call" options
+  const el=$('calls-list');
+  const recentChats=allChats.slice(0,20);
+  if(!recentChats.length){
+    el.innerHTML='<div style="text-align:center;color:var(--text3);font-size:13px;padding:28px">No contacts yet. Start a chat first!</div>';
+    return;
+  }
+  el.innerHTML=recentChats.map(c=>{
+    const isG=c.type==='group';
+    const dn=isG?c.name:(c.memberNames?.find(m=>m.uid!==me.uid)?.name||'Unknown');
+    return`<div class="cp" style="justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="ava" style="width:40px;height:40px;min-width:40px;font-size:14px;background:${gc(dn)};color:#fff">${gi(dn)}</div>
+        <div>
+          <div style="font-size:14px;font-weight:500">${esc(dn)}</div>
+          <div style="font-size:11px;color:var(--text2)">${isG?c.members?.length+' members':'Tap to call'}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="call-ic" style="background:rgba(34,197,94,.15);color:var(--green)" onclick="startCallFrom('${c.id}','voice');closeM('calls-modal')"><span class="material-icons-round">call</span></button>
+        <button class="call-ic" style="background:rgba(124,58,237,.15);color:var(--accent2)" onclick="startCallFrom('${c.id}','video');closeM('calls-modal')"><span class="material-icons-round">videocam</span></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+window.startCallFrom=async function(cid,type){
+  const chat=allChats.find(c=>c.id===cid);
+  if(!chat)return;
+  await openChat(chat);
+  setTimeout(()=>type==='voice'?voiceCall():videoCall(),400);
+};
+
+// ── My Profile Panel ──
+function openMyProfile(){
+  $('my-profile-modal').classList.add('on');
+  $('mp-ava').textContent=gi(me.name);
+  $('mp-ava').style.background=gc(me.name);
+  if(me.photoURL){$('mp-ava').style.backgroundImage=`url(${me.photoURL})`;$('mp-ava').style.backgroundSize='cover';$('mp-ava').textContent='';}
+  $('mp-name').textContent=me.name||'';
+  $('mp-status').textContent=me.status||'';
+  $('mp-email').textContent=me.email||me.phone||'';
+  $('mp-name-in').value=me.name||'';
+  $('mp-status-in').value=me.status||'';
+}
+window.saveMyProfile=async function(){
+  const name=$('mp-name-in').value.trim();
+  const status=$('mp-status-in').value.trim();
+  const af=$('mp-ava-file').files[0];
+  let photo=me.photoURL||'';
+  if(af){const sr=ref(stor,`avatars/${me.uid}`);await uploadBytes(sr,af);photo=await getDownloadURL(sr);}
+  await updateDoc(doc(db,'users',me.uid),{name,status,photoURL:photo});
+  await updateProfile(auth.currentUser,{displayName:name,photoURL:photo});
+  me={...me,name,status,photoURL:photo};
+  closeM('my-profile-modal');
+  showToast('Profile updated! ✅','check_circle');
+};
+window.previewMpAva=function(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    $('mp-ava').style.backgroundImage=`url(${e.target.result})`;
+    $('mp-ava').style.backgroundSize='cover';
+    $('mp-ava').textContent='';
+  };
+  r.readAsDataURL(f);
 };
 
 document.addEventListener('click',e=>{
