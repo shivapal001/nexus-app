@@ -147,9 +147,9 @@ footer{position:relative;z-index:1;padding:40px 48px;border-top:1px solid var(--
   <ul class="nav-links">
     <li><a href="#features">Features</a></li>
     <li><a href="#download">Download</a></li>
-    <li><a href="app.html">Open App</a></li>
+    <li><a href="/app">Open App</a></li>
   </ul>
-  <a href="app.html" class="nav-cta">Launch App →</a>
+  <a href="/app" class="nav-cta">Launch App →</a>
 </nav>
 
 <!-- HERO -->
@@ -159,7 +159,7 @@ footer{position:relative;z-index:1;padding:40px 48px;border-top:1px solid var(--
     <h1>Chat without<br><span>limits.</span></h1>
     <p class="hero-sub">Nexus combines messaging, voice calls, video calls, group chats, and Spotify sharing — all in one beautifully designed app.</p>
     <div class="hero-btns">
-      <a href="app.html" class="btn-main btn-primary-main">Open Nexus Web App</a>
+      <a href="/app" class="btn-main btn-primary-main">Open Nexus Web App</a>
       <a href="#download" class="btn-main btn-outline">Download App</a>
     </div>
     <p class="hero-note">Free forever · No ads · End-to-end encrypted</p>
@@ -279,30 +279,25 @@ footer{position:relative;z-index:1;padding:40px 48px;border-top:1px solid var(--
 <section class="download" id="download">
   <div class="download-card">
     <h2>Start chatting today</h2>
-    <p>No download needed — open Nexus instantly in your browser. Or download for the full native experience.</p>
+    <p>No download needed — open Nexus instantly in your browser. Or install for the full native experience.</p>
     <div class="download-btns">
-      <a href="app.html" class="dl-btn dl-btn-primary">
+      <a href="/app" class="dl-btn dl-btn-primary">
         <span class="dl-icon">🌐</span>
         <div>
           <span class="dl-text-small">Open in Browser</span>
           Nexus Web App
         </div>
       </a>
-      <a href="#" class="dl-btn" id="install-android" style="display:none" onclick="installPWA(event)">
-        <span class="dl-icon">📲</span>
+      <!-- Always visible install button — JS controls behavior -->
+      <a href="#" class="dl-btn" id="install-btn" onclick="handleInstall(event)">
+        <span class="dl-icon" id="install-icon">📲</span>
         <div>
-          <span class="dl-text-small">Add to Home Screen</span>
-          Install App
-        </div>
-      </a>
-      <a href="#" class="dl-btn" id="install-ios" style="display:none" onclick="showIOSGuide(event)">
-        <span class="dl-icon">🍎</span>
-        <div>
-          <span class="dl-text-small">Add to Home Screen</span>
-          iPhone / iPad
+          <span class="dl-text-small" id="install-sub">Add to Home Screen</span>
+          <span id="install-label">Install App</span>
         </div>
       </a>
     </div>
+    <!-- iOS guide -->
     <div id="ios-install-guide" style="display:none;margin-top:24px;background:rgba(255,255,255,.05);border:1px solid rgba(168,85,247,.2);border-radius:16px;padding:20px;max-width:400px;margin-left:auto;margin-right:auto;text-align:left">
       <div style="font-size:15px;font-weight:600;margin-bottom:12px;color:#f1f0f5">Install on iPhone / iPad:</div>
       <div style="display:flex;flex-direction:column;gap:10px;font-size:14px;color:#9d9ab8">
@@ -311,13 +306,15 @@ footer{position:relative;z-index:1;padding:40px 48px;border-top:1px solid var(--
         <div>3️⃣ Tap <strong style="color:#f1f0f5">"Add"</strong> — Nexus appears on your home screen!</div>
       </div>
     </div>
+    <!-- Already installed notice -->
+    <div id="installed-notice" style="display:none;margin-top:16px;font-size:13px;color:#22c55e">✅ Nexus is already installed on your device!</div>
   </div>
 </section>
 
 <footer>
   <div class="footer-logo">Nexus</div>
   <ul class="footer-links">
-    <li><a href="app.html">Open App</a></li>
+    <li><a href="/app">Open App</a></li>
     <li><a href="#features">Features</a></li>
     <li><a href="#">Privacy</a></li>
     <li><a href="#">Terms</a></li>
@@ -326,53 +323,114 @@ footer{position:relative;z-index:1;padding:40px 48px;border-top:1px solid var(--
 </footer>
 
 <script>
+// ── PWA Install — Bulletproof Version ──
 let deferredPrompt = null;
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
-// Android/Chrome PWA install
+const isIOS        = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+const isAndroid    = /android/i.test(navigator.userAgent);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                     || window.navigator.standalone === true;
+
+const btn         = () => document.getElementById('install-btn');
+const icon        = () => document.getElementById('install-icon');
+const sub         = () => document.getElementById('install-sub');
+const label       = () => document.getElementById('install-label');
+const notice      = () => document.getElementById('installed-notice');
+const iosGuide    = () => document.getElementById('ios-install-guide');
+
+// ── State machine ──
+function setMode(mode) {
+  const b = btn();
+  if (!b) return;
+  b.style.display = 'flex';
+  if (mode === 'android') {
+    icon().textContent  = '📲';
+    sub().textContent   = 'Add to Home Screen';
+    label().textContent = 'Install App';
+    b.style.opacity     = '1';
+    b.style.cursor      = 'pointer';
+  } else if (mode === 'ios') {
+    icon().textContent  = '🍎';
+    sub().textContent   = 'iPhone / iPad';
+    label().textContent = 'How to Install';
+    b.style.opacity     = '1';
+    b.style.cursor      = 'pointer';
+  } else if (mode === 'installed') {
+    b.style.display = 'none';
+    if (notice()) notice().style.display = 'block';
+  } else if (mode === 'waiting') {
+    icon().textContent  = '⏳';
+    sub().textContent   = 'Loading...';
+    label().textContent = 'Install App';
+    b.style.opacity     = '0.6';
+    b.style.cursor      = 'default';
+  }
+}
+
+// ── Initial state detection ──
+if (isStandalone) {
+  // Already installed — running in standalone
+  document.addEventListener('DOMContentLoaded', () => setMode('installed'));
+} else if (isIOS) {
+  document.addEventListener('DOMContentLoaded', () => setMode('ios'));
+} else {
+  // Android/Desktop Chrome — show waiting state, will upgrade when prompt fires
+  document.addEventListener('DOMContentLoaded', () => setMode('waiting'));
+}
+
+// ── Capture beforeinstallprompt ──
+// This must be attached ASAP — before any DOMContentLoaded delay
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredPrompt = e;
-  if (!isStandalone) {
-    document.getElementById('install-android').style.display = 'flex';
-  }
+  if (!isStandalone) setMode('android');
 });
 
-window.installPWA = async function(e) {
+// ── Handle install button click ──
+window.handleInstall = async function(e) {
   e.preventDefault();
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  deferredPrompt = null;
-  if (outcome === 'accepted') {
-    document.getElementById('install-android').style.display = 'none';
+  if (isIOS) {
+    // Toggle iOS guide
+    const g = iosGuide();
+    if (g) g.style.display = g.style.display === 'none' ? 'block' : 'none';
+    return;
+  }
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    if (outcome === 'accepted') setMode('installed');
+    else setMode('waiting'); // can re-prompt later
+  } else {
+    // Prompt not available yet — guide user manually
+    alert('To install Nexus:\n\n1. Open Chrome menu (⋮)\n2. Tap "Add to Home screen"\n3. Tap "Add"');
   }
 };
 
-// iOS install guide
-if (isIOS && !isStandalone) {
-  document.getElementById('install-ios').style.display = 'flex';
-}
-window.showIOSGuide = function(e) {
-  e.preventDefault();
-  const g = document.getElementById('ios-install-guide');
-  g.style.display = g.style.display === 'none' ? 'block' : 'none';
-};
-
-// Hide install button after installation
+// ── Installed event ──
 window.addEventListener('appinstalled', () => {
-  document.getElementById('install-android').style.display = 'none';
   deferredPrompt = null;
+  setMode('installed');
 });
 
-// Register service worker
+// ── Service Worker Registration ──
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
-      .then(reg => console.log('[SW] Registered:', reg.scope))
-      .catch(err => console.warn('[SW] Failed:', err));
-  });
+  // Register immediately — do NOT wait for load event
+  // so SW activates before Chrome evaluates installability
+  navigator.serviceWorker.register('/sw.js', { scope: '/' })
+    .then(reg => {
+      console.log('[SW] Registered, scope:', reg.scope);
+      // If SW is installing (first visit), wait for it to activate
+      // then check if beforeinstallprompt was already missed
+      if (reg.installing) {
+        reg.installing.addEventListener('statechange', function() {
+          if (this.state === 'activated') {
+            console.log('[SW] Activated — reload may be needed for install prompt');
+          }
+        });
+      }
+    })
+    .catch(err => console.warn('[SW] Failed:', err));
 }
 </script>
 </body>
