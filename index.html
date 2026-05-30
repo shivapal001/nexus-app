@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus — Connect. Chat. Vibe.</title>
+<meta name="description" content="The everything app for your conversations. Chat, call, share — all in one place.">
+<meta name="theme-color" content="#7c3aed">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nexus">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#08080f;
+  --accent:#7c3aed;
+  --accent2:#a855f7;
+  --accent3:#c084fc;
+  --text:#f1f0f5;
+  --text2:#9d9ab8;
+  --border:rgba(255,255,255,.08);
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* BG */
+.bg-orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0}
+.orb1{width:600px;height:600px;background:rgba(124,58,237,.15);top:-200px;right:-200px}
+.orb2{width:500px;height:500px;background:rgba(168,85,247,.1);bottom:-100px;left:-200px}
+.orb3{width:300px;height:300px;background:rgba(192,132,252,.08);top:50%;left:50%;transform:translate(-50%,-50%)}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:20px 48px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);backdrop-filter:blur(20px);background:rgba(8,8,15,.6)}
+.nav-logo{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;background:linear-gradient(135deg,var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-links{display:flex;gap:32px;list-style:none}
+.nav-links a{color:var(--text2);text-decoration:none;font-size:14px;transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+.nav-cta{padding:10px 22px;border-radius:10px;background:var(--accent);color:#fff;font-size:14px;font-weight:500;text-decoration:none;transition:opacity .2s}
+.nav-cta:hover{opacity:.85}
+
+/* HERO */
+.hero{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:120px 24px 80px}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:20px;border:1px solid rgba(168,85,247,.3);background:rgba(168,85,247,.08);font-size:12px;color:var(--accent3);margin-bottom:32px;font-weight:500;letter-spacing:.5px;text-transform:uppercase}
+.hero-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent3);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+h1{font-family:'Syne',sans-serif;font-size:clamp(52px,8vw,96px);font-weight:800;line-height:1;margin-bottom:24px;letter-spacing:-2px}
+h1 span{background:linear-gradient(135deg,var(--accent2) 0%,var(--accent3) 50%,#e879f9 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:clamp(16px,2vw,20px);color:var(--text2);max-width:560px;margin:0 auto 48px;line-height:1.7;font-weight:300}
+.hero-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.btn-main{padding:16px 36px;border-radius:14px;font-size:16px;font-weight:500;text-decoration:none;transition:all .3s;font-family:'Inter',sans-serif;cursor:pointer;border:none}
+.btn-primary-main{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 0 40px rgba(124,58,237,.3)}
+.btn-primary-main:hover{transform:translateY(-2px);box-shadow:0 0 60px rgba(168,85,247,.4)}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-outline:hover{background:rgba(255,255,255,.05)}
+.hero-note{margin-top:16px;font-size:13px;color:var(--text2)}
+
+/* PHONE MOCKUP */
+.mockup-section{position:relative;z-index:1;padding:40px 24px 100px;display:flex;justify-content:center}
+.phone-frame{width:320px;border-radius:40px;border:2px solid var(--border);background:rgba(17,17,28,.8);backdrop-filter:blur(20px);overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,.6),0 0 80px rgba(124,58,237,.15);position:relative}
+.phone-notch{width:120px;height:28px;background:#0a0a0f;border-radius:0 0 20px 20px;margin:0 auto;position:relative;z-index:2}
+.phone-screen{padding:0 0 20px}
+.phone-header{padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.p-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a855f7);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.p-name{font-size:13px;font-weight:600}
+.p-status{font-size:11px;color:#22c55e}
+.p-icons{margin-left:auto;display:flex;gap:6px}
+.p-icon{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:12px}
+.p-messages{padding:12px;display:flex;flex-direction:column;gap:8px}
+.p-msg{padding:8px 12px;border-radius:14px;font-size:12px;line-height:1.5;max-width:75%}
+.p-msg.in{background:rgba(255,255,255,.05);align-self:flex-start;border-bottom-left-radius:3px}
+.p-msg.out{background:#4c1d95;align-self:flex-end;border-bottom-right-radius:3px}
+.p-msg-time{font-size:10px;color:rgba(255,255,255,.4);margin-top:3px;text-align:right}
+.p-spotify{background:#111;border:1px solid #1db954;border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;align-self:flex-end;max-width:80%}
+.p-spot-thumb{width:36px;height:36px;border-radius:6px;background:#1db954;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.p-spot-title{font-size:11px;font-weight:600}
+.p-spot-artist{font-size:10px;color:#1db954}
+.p-input-bar{margin:8px 12px 0;background:rgba(255,255,255,.05);border-radius:12px;padding:10px 14px;font-size:11px;color:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:space-between}
+.p-input-icons{display:flex;gap:6px;font-size:14px}
+
+/* FEATURES */
+.features{position:relative;z-index:1;padding:100px 48px;max-width:1200px;margin:0 auto}
+.section-tag{font-size:12px;font-weight:500;color:var(--accent3);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}
+.section-title{font-family:'Syne',sans-serif;font-size:clamp(32px,4vw,52px);font-weight:800;margin-bottom:16px}
+.section-sub{font-size:16px;color:var(--text2);max-width:480px;line-height:1.7}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;margin-top:60px}
+.feat-card{padding:32px;border-radius:24px;border:1px solid var(--border);background:rgba(255,255,255,.02);transition:all .3s;cursor:default}
+.feat-card:hover{background:rgba(255,255,255,.04);border-color:rgba(168,85,247,.3);transform:translateY(-4px)}
+.feat-icon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:20px}
+.feat-title{font-size:18px;font-weight:600;margin-bottom:8px;font-family:'Syne',sans-serif}
+.feat-desc{font-size:14px;color:var(--text2);line-height:1.7}
+
+/* STATS */
+.stats{position:relative;z-index:1;padding:80px 48px;text-align:center}
+.stats-inner{display:flex;gap:0;justify-content:center;border:1px solid var(--border);border-radius:24px;max-width:700px;margin:0 auto;overflow:hidden}
+.stat{flex:1;padding:40px 24px;position:relative}
+.stat:not(:last-child)::after{content:'';position:absolute;right:0;top:20%;bottom:20%;width:1px;background:var(--border)}
+.stat-num{font-family:'Syne',sans-serif;font-size:42px;font-weight:800;background:linear-gradient(135deg,var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:13px;color:var(--text2);margin-top:4px}
+
+/* DOWNLOAD */
+.download{position:relative;z-index:1;padding:100px 48px;text-align:center}
+.download-card{max-width:800px;margin:0 auto;padding:64px;border-radius:32px;border:1px solid rgba(168,85,247,.2);background:rgba(124,58,237,.05);position:relative;overflow:hidden}
+.download-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(168,85,247,.1),transparent 70%);pointer-events:none}
+.download-card h2{font-family:'Syne',sans-serif;font-size:clamp(28px,4vw,48px);font-weight:800;margin-bottom:16px}
+.download-card p{font-size:16px;color:var(--text2);margin-bottom:40px}
+.download-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.dl-btn{display:flex;align-items:center;gap:12px;padding:14px 24px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);text-decoration:none;transition:all .2s;font-size:14px}
+.dl-btn:hover{background:rgba(255,255,255,.08);border-color:rgba(168,85,247,.3)}
+.dl-btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;font-weight:600}
+.dl-btn-primary:hover{opacity:.9;transform:translateY(-2px)}
+.dl-icon{font-size:28px}
+.dl-text-small{font-size:11px;opacity:.7;display:block}
+
+/* FOOTER */
+footer{position:relative;z-index:1;padding:40px 48px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.footer-logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;background:linear-gradient(135deg,var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.footer-links{display:flex;gap:24px;list-style:none}
+.footer-links a{color:var(--text2);text-decoration:none;font-size:13px;transition:color .2s}
+.footer-links a:hover{color:var(--text)}
+.footer-copy{font-size:13px;color:var(--text2)}
+
+@media(max-width:768px){
+  nav{padding:16px 20px}
+  .nav-links{display:none}
+  .features,.stats,.download{padding:60px 20px}
+  .download-card{padding:40px 24px}
+  .stats-inner{flex-direction:column}
+  .stat:not(:last-child)::after{display:none}
+  .hero{padding:100px 20px 60px}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-orb orb1"></div>
+<div class="bg-orb orb2"></div>
+<div class="bg-orb orb3"></div>
+
+<nav>
+  <div class="nav-logo">Nexus</div>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#download">Download</a></li>
+    <li><a href="app.html">Open App</a></li>
+  </ul>
+  <a href="app.html" class="nav-cta">Launch App →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div>
+    <div class="hero-badge">✦ Now in Beta</div>
+    <h1>Chat without<br><span>limits.</span></h1>
+    <p class="hero-sub">Nexus combines messaging, voice calls, video calls, group chats, and Spotify sharing — all in one beautifully designed app.</p>
+    <div class="hero-btns">
+      <a href="app.html" class="btn-main btn-primary-main">Open Nexus Web App</a>
+      <a href="#download" class="btn-main btn-outline">Download App</a>
+    </div>
+    <p class="hero-note">Free forever · No ads · End-to-end encrypted</p>
+  </div>
+</section>
+
+<!-- PHONE MOCKUP -->
+<div class="mockup-section">
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="phone-screen">
+      <div class="phone-header">
+        <div class="p-avatar">P</div>
+        <div>
+          <div class="p-name">Priya Sharma</div>
+          <div class="p-status">● Online</div>
+        </div>
+        <div class="p-icons">
+          <div class="p-icon">📞</div>
+          <div class="p-icon">📹</div>
+        </div>
+      </div>
+      <div class="p-messages">
+        <div class="p-msg in">Hey! Did you listen to that new song? 🎵<div class="p-msg-time">2:30 PM</div></div>
+        <div class="p-msg out">OMG yes!! Let me share it<div class="p-msg-time">2:31 PM ✓✓</div></div>
+        <div class="p-spotify">
+          <div class="p-spot-thumb">🎵</div>
+          <div>
+            <div class="p-spot-title">Blinding Lights</div>
+            <div class="p-spot-artist">The Weeknd · Spotify</div>
+          </div>
+        </div>
+        <div class="p-msg in">🔥🔥 This is my jam!!<div class="p-msg-time">2:32 PM</div></div>
+        <div class="p-msg out" style="background:rgba(255,255,255,.05);display:flex;align-items:center;gap:8px">
+          <span style="font-size:16px">🎙️</span>
+          <div style="flex:1;height:20px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.2) 0px,rgba(255,255,255,.2) 2px,transparent 2px,transparent 5px);border-radius:4px"></div>
+          <span style="font-size:10px;color:rgba(255,255,255,.5)">0:08</span>
+        </div>
+      </div>
+      <div class="p-input-bar">
+        <span>Message...</span>
+        <div class="p-input-icons"><span>📎</span><span>🎤</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="section-tag">Everything You Need</div>
+  <h2 class="section-title">Built for the way<br>you actually talk</h2>
+  <p class="section-sub">Not just another chat app — Nexus is the everything app for your conversations.</p>
+
+  <div class="features-grid">
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(124,58,237,.15)">💬</div>
+      <div class="feat-title">Personal & Group Chats</div>
+      <div class="feat-desc">One-on-one DMs and group chats with up to 1000 members. Create, name, and manage groups with ease.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(34,197,94,.15)">📞</div>
+      <div class="feat-title">Voice & Video Calls</div>
+      <div class="feat-desc">Crystal-clear voice calls and HD video calls. Mute, flip camera, speaker mode — all the controls you need.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(29,185,84,.15)">🎵</div>
+      <div class="feat-title">Spotify Song Sharing</div>
+      <div class="feat-desc">Share songs directly in chat just like Instagram — browse your Spotify library and share with one tap.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(96,165,250,.15)">📸</div>
+      <div class="feat-title">Photo & Video Sharing</div>
+      <div class="feat-desc">Send photos, videos, and documents. View photos in full-screen lightbox. Share your location too.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(239,68,68,.15)">🎙️</div>
+      <div class="feat-title">Voice Notes</div>
+      <div class="feat-desc">Record and send voice messages with a single tap. Perfect for when typing feels like too much work.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(168,85,247,.15)">🔐</div>
+      <div class="feat-title">Secure Login</div>
+      <div class="feat-desc">Sign in with Google, email/password, or phone OTP. Your account, your way — always secure.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(251,146,60,.15)">✨</div>
+      <div class="feat-title">Stories & Status</div>
+      <div class="feat-desc">Share moments with your contacts through stories. See who's online, who's typing, and more.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(20,184,166,.15)">🌐</div>
+      <div class="feat-title">Works Everywhere</div>
+      <div class="feat-desc">Use Nexus in your browser — no download needed. Mobile, tablet, or desktop — it just works.</div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="stats">
+  <div class="stats-inner">
+    <div class="stat">
+      <div class="stat-num">100%</div>
+      <div class="stat-label">Free Forever</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">0</div>
+      <div class="stat-label">Ads. Ever.</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">E2E</div>
+      <div class="stat-label">Encrypted</div>
+    </div>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section class="download" id="download">
+  <div class="download-card">
+    <h2>Start chatting today</h2>
+    <p>No download needed — open Nexus instantly in your browser. Or download for the full native experience.</p>
+    <div class="download-btns">
+      <a href="app.html" class="dl-btn dl-btn-primary">
+        <span class="dl-icon">🌐</span>
+        <div>
+          <span class="dl-text-small">Open in Browser</span>
+          Nexus Web App
+        </div>
+      </a>
+      <a href="#" class="dl-btn" id="install-android" style="display:none" onclick="installPWA(event)">
+        <span class="dl-icon">📲</span>
+        <div>
+          <span class="dl-text-small">Add to Home Screen</span>
+          Install App
+        </div>
+      </a>
+      <a href="#" class="dl-btn" id="install-ios" style="display:none" onclick="showIOSGuide(event)">
+        <span class="dl-icon">🍎</span>
+        <div>
+          <span class="dl-text-small">Add to Home Screen</span>
+          iPhone / iPad
+        </div>
+      </a>
+    </div>
+    <div id="ios-install-guide" style="display:none;margin-top:24px;background:rgba(255,255,255,.05);border:1px solid rgba(168,85,247,.2);border-radius:16px;padding:20px;max-width:400px;margin-left:auto;margin-right:auto;text-align:left">
+      <div style="font-size:15px;font-weight:600;margin-bottom:12px;color:#f1f0f5">Install on iPhone / iPad:</div>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:14px;color:#9d9ab8">
+        <div>1️⃣ Tap the <strong style="color:#f1f0f5">Share</strong> button <span style="font-size:16px">⬆️</span> at the bottom of Safari</div>
+        <div>2️⃣ Scroll down → tap <strong style="color:#f1f0f5">"Add to Home Screen"</strong></div>
+        <div>3️⃣ Tap <strong style="color:#f1f0f5">"Add"</strong> — Nexus appears on your home screen!</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">Nexus</div>
+  <ul class="footer-links">
+    <li><a href="app.html">Open App</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#">Privacy</a></li>
+    <li><a href="#">Terms</a></li>
+  </ul>
+  <div class="footer-copy">© 2025 Nexus. Built with Firebase.</div>
+</footer>
+
+<script>
+let deferredPrompt = null;
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+// Android/Chrome PWA install
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-android').style.display = 'flex';
+});
+
+window.installPWA = async function(e) {
+  e.preventDefault();
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  if (outcome === 'accepted') {
+    document.getElementById('install-android').style.display = 'none';
+  }
+};
+
+// iOS install guide
+if (isIOS && !isStandalone) {
+  document.getElementById('install-ios').style.display = 'flex';
+}
+window.showIOSGuide = function(e) {
+  e.preventDefault();
+  const g = document.getElementById('ios-install-guide');
+  g.style.display = g.style.display === 'none' ? 'block' : 'none';
+};
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
