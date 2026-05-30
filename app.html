@@ -961,13 +961,12 @@ window.signOut2=async function(){
 // ── Init ──
 function initApp(){
   $('splash').classList.add('hide');
-  loadChats();loadStories();loadUsers();
-  showToast('Welcome, '+me.name+' 👋','waving_hand');
-  // Request notification permission
+  loadChats();
+  loadUsers().then(()=>loadStories()); // real users pehle load hon, phir stories
   if('Notification' in window&&Notification.permission==='default'){
     Notification.requestPermission();
   }
-  // Check URL params for shortcuts
+  showToast('Welcome, '+me.name+' 👋','waving_hand');
   const p=new URLSearchParams(location.search);
   if(p.get('action')==='new-chat')setTimeout(openNC,500);
   if(p.get('action')==='new-group')setTimeout(openNG,500);
@@ -1361,6 +1360,7 @@ window.shareLoc=function(){
 async function loadUsers(){
   const snap=await getDocs(collection(db,'users'));
   allUsers=[];snap.forEach(d=>{if(d.id!==me.uid)allUsers.push({uid:d.id,...d.data()});});
+  return allUsers;
 }
 function renderContacts(users,elId,onClick){
   const el=$(elId);if(!el)return;
@@ -1428,11 +1428,16 @@ window.createGroup=async function(){
 // ── Stories ──
 function loadStories(){
   const el=$('stories');
-  const names=['You',...['Alex','Priya','Rahul','Sara','Riya']];
-  el.innerHTML=names.map((n,i)=>`
-    <div class="story" onclick="showToast('${n==='You'?'Your story':n+"'s story"}','auto_stories')">
-      <div class="story-ring"><div class="story-inner" style="background:${gc(i===0?me.name:n)}">${i===0?gi(me.name):gi(n)}</div></div>
-      <div class="story-n">${n==='You'?'You':n}</div>
+  // Show only real users from Firebase (already loaded in allUsers)
+  // "You" first, then real contacts who are online
+  const onlineUsers=allUsers.filter(u=>u.online).slice(0,6);
+  const rows=[{uid:me.uid,name:me.name,isMe:true},...onlineUsers.map(u=>({...u,isMe:false}))];
+  if(rows.length<=1){el.style.display='none';return;}
+  el.style.display='flex';
+  el.innerHTML=rows.map(u=>`
+    <div class="story" onclick="showToast('${u.isMe?'Your story':esc(u.name)+"'s story"}','auto_stories')">
+      <div class="story-ring"><div class="story-inner" style="background:${gc(u.name)}">${gi(u.name)}</div></div>
+      <div class="story-n">${u.isMe?'You':esc(u.name)}</div>
     </div>`).join('');
 }
 
